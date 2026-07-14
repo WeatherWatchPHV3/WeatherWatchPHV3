@@ -1,29 +1,31 @@
-// ========================
-// CREATE MAP (Buong Pilipinas sa simula)
-// ========================
-const map = L.map('map').setView([12.8797, 121.7740], 6);
+// ==========================================
+// 1. INITIALIZE MAP (Buong Pilipinas View)
+// ==========================================
+const map = L.map('map', {
+    zoomControl: false,
+    minZoom: 5,
+    maxZoom: 15,
+    attributionControl: false
+}).setView([12.8797, 121.7740], 6);
 
-// ========================
-// BASE MAP
-// ========================
+// OpenStreetMap Standard Map (gaya ng gamit mo)
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// ========================
-// SELECTED COLOR
-// ========================
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+// Global layers & state
+let geojsonLayer;
 let selectedColor = "#ff0000";
 
+// Color picker listener
 document.getElementById("colorPicker").addEventListener("input", function () {
     selectedColor = this.value;
 });
 
-// Gagamitin natin ito para hawakan ang active map layer
-let geojsonLayer;
-
 // ==========================================
-// DATA DICTIONARY (Para sa Cascading Dropdowns ng index.html mo)
+// 2. REGIONAL DATABASE FOR THE DROPDOWNS
 // ==========================================
 const phRegionsAndProvinces = {
     "NCR": ["Metro Manila"],
@@ -45,12 +47,11 @@ const phRegionsAndProvinces = {
     "BARMM": ["Basilan", "Lanao del Sur", "Maguindanao del Norte", "Maguindanao del Sur", "Sulu", "Tawi-Tawi"]
 };
 
-// Kumuha ng references sa iyong dropdowns mula sa HTML
 const regionSelect = document.getElementById('region');
 const provinceSelect = document.getElementById('province');
 const municipalitySelect = document.getElementById('municipality');
 
-// Awtomatikong punuin ang Region Dropdown pagka-load ng page
+// Kusa nitong pupunuin ang Region Dropdown sa umpisa
 for (let region in phRegionsAndProvinces) {
     let opt = document.createElement('option');
     opt.value = region;
@@ -59,18 +60,15 @@ for (let region in phRegionsAndProvinces) {
 }
 
 // ==========================================
-// CASCADING LOGIC (Region -> Province)
+// 3. CASCADING REGION TO PROVINCE
 // ==========================================
 regionSelect.addEventListener('change', function() {
     const selectedRegion = this.value;
-    
-    // I-reset ang mga sumunod na dropdowns
     provinceSelect.innerHTML = '<option>Select Province</option>';
     municipalitySelect.innerHTML = '<option>Select Municipality</option>';
 
     if (selectedRegion === "Select Region" || !phRegionsAndProvinces[selectedRegion]) return;
 
-    // Punuin ang listahan ng mga probinsya
     phRegionsAndProvinces[selectedRegion].forEach(prov => {
         let opt = document.createElement('option');
         opt.value = prov;
@@ -80,7 +78,7 @@ regionSelect.addEventListener('change', function() {
 });
 
 // ==========================================
-// DYNAMIC GEOJSON FETCH (Province -> Load Municipalities)
+// 4. ON-DEMAND DYNAMIC FETCHING
 // ==========================================
 provinceSelect.addEventListener('change', function() {
     const selectedProvince = this.value;
@@ -88,30 +86,23 @@ provinceSelect.addEventListener('change', function() {
 
     if (selectedProvince === "Select Province") return;
 
-    // Alisin ang lumang layer bago magkarga ng bago
     if (geojsonLayer) {
         map.removeLayer(geojsonLayer);
     }
 
-    // I-format ang pangalan ng probinsya para sa URL (hal. "Davao del Sur" -> "davao-del-sur")
     const formattedProvName = selectedProvince.toLowerCase()
         .replace(/\./g, '')
         .replace(/\s+/g, '-');
 
-    // Kunin ang mapa mula sa maaasahang online repository (Dynamic Fetching)
     const geoJsonUrl = `https://raw.githubusercontent.com/faeldon/philippines-json-maps/master/2023/geojson/municipalities/${formattedProvName}.geojson`;
 
     fetch(geoJsonUrl)
     .then(response => {
-        if (!response.ok) {
-            throw new Error("Cannot load GeoJSON.");
-        }
+        if (!response.ok) throw new Error("Cannot load GeoJSON.");
         return response.json();
     })
     .then(data => {
-
         geojsonLayer = L.geoJSON(data, {
-
             style: function () {
                 return {
                     color: "#ffffff",
@@ -120,9 +111,7 @@ provinceSelect.addEventListener('change', function() {
                     fillOpacity: 0.8
                 };
             },
-
             onEachFeature: function (feature, layer) {
-
                 const municipality =
                     feature.properties.ADM3_EN ||
                     feature.properties.NAME_2 ||
@@ -130,7 +119,9 @@ provinceSelect.addEventListener('change', function() {
                     feature.properties.name ||
                     "Municipality";
 
-                // Hover Action gaya ng orihinal mong gawa
+                layer.bindTooltip(municipality, { permanent: false, className: 'map-label' });
+
+                // Hover Effects (Gaya ng orihinal mong code!)
                 layer.on("mouseover", function () {
                     layer.setStyle({
                         weight: 3,
@@ -142,7 +133,7 @@ provinceSelect.addEventListener('change', function() {
                     geojsonLayer.resetStyle(layer);
                 });
 
-                // Click Action (Coloring base sa color picker at selection)
+                // Click-to-Color Logic
                 layer.on("click", function () {
                     layer.setStyle({
                         fillColor: selectedColor,
@@ -150,19 +141,15 @@ provinceSelect.addEventListener('change', function() {
                     });
 
                     layer.bindPopup("<b>" + municipality + "</b>").openPopup();
-                    
-                    // Awtomatikong piliin ang munisipyong ito sa Dropdown ng HTML mo
                     municipalitySelect.value = municipality;
                 });
-
             }
-
         }).addTo(map);
 
-        // Kusa nitong itututok at i-zo-zoom ang mapa sa napiling probinsya!
+        // Kusa nitong i-zo-zoom ang map sa boundaries ng piniling probinsya
         map.fitBounds(geojsonLayer.getBounds());
 
-        // Punuin ang Municipality Dropdown gamit ang mga pangalan mula sa kaka-load lang na GeoJSON
+        // Dynamic Loading ng Municipalities sa Dropdown list
         const cleanMunList = data.features.map(f => {
             return f.properties.ADM3_EN || f.properties.NAME_2 || f.properties.NAME || f.properties.name || "Municipality";
         }).sort();
@@ -173,26 +160,24 @@ provinceSelect.addEventListener('change', function() {
             opt.innerText = mun;
             municipalitySelect.appendChild(opt);
         });
-
     })
     .catch(error => {
         console.error(error);
-        alert("Failed to load GeoJSON file for " + selectedProvince);
+        alert("Failed to load map data for " + selectedProvince);
     });
 });
 
 // ==========================================
-// APPLY BUTTON (Para sa Manu-manong Pag-pili sa Sidebar)
+// 5. MANUAL APPLY BUTTON CLICK
 // ==========================================
 document.getElementById('applyBtn').addEventListener('click', function() {
     const selectedMun = municipalitySelect.value;
     
     if (selectedMun === "Select Municipality" || !geojsonLayer) {
-        alert("Pumili muna ng Munisipyo!");
+        alert("Paki-pili muna ang Munisipyo.");
         return;
     }
 
-    // Hanapin ang polygon sa mapa at pintahan gamit ang napiling colorPicker
     geojsonLayer.eachLayer(function(layer) {
         const currentMunName = layer.feature.properties.ADM3_EN || layer.feature.properties.NAME_2 || layer.feature.properties.NAME || layer.feature.properties.name;
         if (currentMunName === selectedMun) {
@@ -204,14 +189,10 @@ document.getElementById('applyBtn').addEventListener('click', function() {
     });
 });
 
-// ========================
-// DOWNLOAD PNG (Pinalitan natin para maging totoo nang image download)
-// ========================
+// ==========================================
+// 6. GENERATE PNG FUNCTION
+// ==========================================
 document.getElementById("downloadBtn").addEventListener("click", function () {
-    // Kung gusto mo pa rin ng print option ng browser:
-    // window.print();
-
-    // Pero kung gusto mo ng totoong PNG export, mag-load tayo ng library live at i-save ang screen:
     if (typeof html2canvas === 'undefined') {
         const script = document.createElement('script');
         script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
