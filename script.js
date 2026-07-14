@@ -77,7 +77,7 @@ regionSelect.addEventListener('change', function() {
 });
 
 // ==========================================
-// 4. HIGH-RESOLUTION DYNAMIC MAP LOADER
+// 4. HIGH-RESOLUTION DYNAMIC MAP LOADER (Fixed Naming Bug)
 // ==========================================
 provinceSelect.addEventListener('change', function() {
     const selectedProvince = this.value;
@@ -89,12 +89,11 @@ provinceSelect.addEventListener('change', function() {
         map.removeLayer(geojsonLayer);
     }
 
-    // Pag-format ng pangalan ng file para mag-match sa bagong high-res API (e.g., "Bulacan" -> "bulacan")
+    // FIXED FORMATTING: Ginawang UNDERSCORE (_) ang mga espasyo para sa katugmaang high-res link nito
     const formattedProvName = selectedProvince.toLowerCase()
-        .replace(/\./g, '')
-        .replace(/\s+/g, '-');
+        .replace(/\s+/g, '_');
 
-    // HIGH-RES SOURCE URL (Para makinis at pulido ang mga gilid ng bayan)
+    // HIGH-RES SOURCE URL
     const geoJsonUrl = `https://raw.githubusercontent.com/f-andres/philippines-geojson/master/geojson/municities/by-province/municities-province-${formattedProvName}.geojson`;
 
     fetch(geoJsonUrl)
@@ -105,12 +104,13 @@ provinceSelect.addEventListener('change', function() {
     .then(data => {
         geojsonLayer = L.geoJSON(data, {
             style: {
-                color: "rgba(255, 255, 255, 0.4)", // Pinalambot na border style
+                color: "rgba(255, 255, 255, 0.4)",
                 weight: 0.8,
                 fillColor: "#808080",
                 fillOpacity: 0.8
             },
             onEachFeature: function (feature, layer) {
+                // Katugma sa bagong high-res properties structure ng file
                 const municipality =
                     feature.properties.NAME_2 ||
                     feature.properties.name ||
@@ -157,7 +157,7 @@ provinceSelect.addEventListener('change', function() {
     })
     .catch(error => {
         console.error("Error loading high-res GeoJSON:", error);
-        alert("Failed to load smooth map data for " + selectedProvince);
+        alert("Failed to load map data for " + selectedProvince);
     });
 });
 
