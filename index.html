@@ -1,58 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather Watch PH - Full Embedded Map</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map { height: 600px; width: 100%; }
+    </style>
 </head>
 <body>
-
-    <div class="sidebar">
-        <h2>🌦 Weather Watch PH</h2>
-
-        <label>Advisory</label>
-        <select id="advisory">
-            <option>Class Suspension</option>
-            <option>Rainfall Warning</option>
-            <option>Flood Advisory</option>
-            <option>Tropical Cyclone</option>
-        </select>
-
-        <label>Province</label>
-        <select id="province">
-            <option value="">All Provinces</option>
-        </select>
-
-        <label>Municipality / City</label>
-        <select id="municipality">
-            <option value="">Select Municipality</option>
-        </select>
-
-        <label>Status</label>
-        <select id="status">
-            <option>🔴 All Levels</option>
-            <option>🟠 Senior High</option>
-            <option>🟡 Elementary</option>
-            <option>⚪ No Advisory</option>
-        </select>
-
-        <label>Color</label>
-        <input type="color" id="colorPicker" value="#ff0000">
-
-        <button id="applyBtn">Apply Color</button>
-        <button id="resetBtn">Reset Colors</button>
-        <button id="downloadBtn">Generate PNG</button>
-        
-        <div class="selected-box">
-            Selected: <span id="selectedDisplay">None</span>
-        </div>
-    </div>
-
     <div id="map"></div>
+    <script>
+        // Initialize map
+        var map = L.map('map').setView([12.8797, 121.7740], 6); // Center of PH
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="script.js"></script>
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        // Dito natin ilalagay ang logic ng kulay
+        function style(feature) {
+            return {
+                fillColor: feature.properties.status === 'affected' ? 'red' : 'gray',
+                weight: 2,
+                opacity: 1,
+                color: 'white',
+                fillOpacity: 0.7
+            };
+        }
+    </script>
 </body>
 </html>
