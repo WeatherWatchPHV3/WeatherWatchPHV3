@@ -1,154 +1,176 @@
-// 1. Initialize Map sa sentro ng buong Pilipinas
+// 1. Initialize Map targeting the Philippines
 const map = L.map('map', {
     zoomControl: false,
     minZoom: 5,
     maxZoom: 15,
     attributionControl: false
-}).setView([12.8797, 121.7740], 6); // Buong PH View
+}).setView([14.95, 120.90], 9); // Naka-focus sa Central Luzon/NCR axis para sa visual testing
 
-// Dark mode map layer
+// Disaster Command Center Dark Map Skin
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-// BYDRRM Legend Mapping Colors
-const statusColors = {
-    "all-levels-both": "#ff2d55",
-    "all-levels-public": "#ff3b30",
-    "shs-both": "#007aff",
-    "elem-both": "#5856d6",
-    "no-announcement": "#4a4a4a",
-    "custom": "#00c7be"
+// Color Hex Codes Base Map para sa Core Module 3 (Geographic Visualization)
+const alertColors = {
+    "level-critical": "#ff3b30", // Red
+    "level-warning": "#ff9500",  // Orange
+    "level-alert": "#ffcc00",    // Yellow
+    "level-custom": "#007aff",   // Blue
+    "level-normal": "#4a4a4a"    // Dark Gray (Default Background)
 };
 
-let geoJsonLayer = null;
-let allFeatures = [];
+// 2. DATA DICTIONARY PARA SA MODULE 4 (Cascading Selection Simulation Data)
+const geoDataRepository = {
+    "r3": {
+        name: "Region III (Central Luzon)",
+        provinces: {
+            "bulacan": {
+                name: "Bulacan",
+                center: [14.95, 121.00],
+                zoom: 10,
+                municipalities: ["Malolos", "Hagonoy", "Calumpit", "Paombong", "San Miguel"]
+            },
+            "pampanga": {
+                name: "Pampanga",
+                center: [15.05, 120.65],
+                zoom: 10,
+                municipalities: ["San Fernando", "Angeles", "Guagua", "Lubao"]
+            }
+        }
+    },
+    "ncr": {
+        name: "NCR (National Capital Region)",
+        provinces: {
+            "metro-manila": {
+                name: "Metro Manila",
+                center: [14.5995, 120.9842],
+                zoom: 11,
+                municipalities: ["Manila", "Quezon City", "Pasig", "Taguig", "Makati"]
+            }
+        }
+    }
+};
 
-// 2. KUNIN ANG MAP DATA NG PILIPINAS MULA SA INTERNET
-// Gagamit tayo ng maaasahang high-speed data source ng PH Boundaries
-fetch('https://raw.githubusercontent.com/faeldon/philippines-json-maps/master/2023/geojson/provinces.geojson')
-    .then(response => response.json())
-    .then(data => {
-        allFeatures = data.features;
-        
-        // I-populate ang Region Dropdown sa simula
-        populateRegions();
+// Lumikha ng Target Vector Shapes para sa Pagpapakita ng Advisory sa Mapa
+const localBoundaries = {
+    "type": "FeatureCollection",
+    "features": [
+        { "type": "Feature", "properties": { "name": "Hagonoy", "parent": "bulacan", "status": "level-normal" }, "geometry": { "type": "Polygon", "coordinates": [[[120.65, 14.80], [120.75, 14.80], [120.75, 14.88], [120.65, 14.88], [120.65, 14.80]]] } },
+        { "type": "Feature", "properties": { "name": "Calumpit", "parent": "bulacan", "status": "level-normal" }, "geometry": { "type": "Polygon", "coordinates": [[[120.65, 14.88], [120.75, 14.88], [120.75, 14.96], [120.65, 14.96], [120.65, 14.88]]] } },
+        { "type": "Feature", "properties": { "name": "Paombong", "parent": "bulacan", "status": "level-normal" }, "geometry": { "type": "Polygon", "coordinates": [[[120.75, 14.80], [120.82, 14.80], [120.82, 14.88], [120.75, 14.88], [120.75, 14.80]]] } },
+        { "type": "Feature", "properties": { "name": "Malolos", "parent": "bulacan", "status": "level-normal" }, "geometry": { "type": "Polygon", "coordinates": [[[120.82, 14.80], [120.92, 14.80], [120.92, 14.88], [120.82, 14.88], [120.82, 14.80]]] } }
+    ]
+};
 
-        // I-load ang mga hugis sa mapa
-        geoJsonLayer = L.geoJSON(data, {
-            style: defaultStyle,
-            onEachFeature: onEachFeature
-        }).addTo(map);
-    })
-    .catch(err => console.error("Hindi ma-load ang mapa ng Pilipinas:", err));
-
-function defaultStyle(feature) {
+// Style Controller Engine
+function styleEngine(feature) {
     return {
-        fillColor: statusColors["no-announcement"],
-        weight: 1,
+        fillColor: alertColors[feature.properties.status],
+        weight: 1.5,
         opacity: 1,
         color: '#ffffff',
-        fillOpacity: 0.4
+        fillOpacity: 0.6
     };
 }
 
-function onEachFeature(feature, layer) {
-    // Pangalan ng Probinsya/Lugar kapag tinap sa phone
-    const locName = feature.properties.NAME_1 || feature.properties.name || "Unknown Province";
-    layer.bindTooltip(locName, { permanent: false, direction: 'center', className: 'map-label' });
-
-    layer.on({
-        click: function(e) {
-            // Kapag pinindot sa mapa, pipiliin nito sa dropdown ang probinsya
-            document.getElementById('select-province').value = locName;
-            
+// Render dynamic vectors to the GIS plane
+const geoJsonLayer = L.geoJSON(localBoundaries, {
+    style: styleEngine,
+    onEachFeature: function(feature, layer) {
+        layer.bindTooltip(feature.properties.name, { permanent: true, direction: 'center', className: 'map-label' });
+        
+        // Map Click Event Listener (Objective 1)
+        layer.on('click', function() {
+            document.getElementById('select-municipality').value = feature.properties.name;
             geoJsonLayer.eachLayer(l => geoJsonLayer.resetStyle(l));
-            layer.setStyle({ weight: 3, color: '#00ffcc', fillOpacity: 0.6 });
-        }
-    });
-}
+            layer.setStyle({ weight: 3, color: '#00ffcc' });
+        });
+    }
+}).addTo(map);
 
-// 3. LOGIC PARA SA MGA DYNAMIC DROPDOWNS (Buong Bansa)
-function populateRegions() {
-    const regionSelect = document.getElementById('select-region');
-    // Kumpletong 17 rehiyon ng Pilipinas para sa v3.0
-    const regions = [
-        {code: "NCR", name: "National Capital Region"},
-        {code: "CAR", name: "Cordillera Administrative Region"},
-        {code: "R1", name: "Region I (Ilocos)"},
-        {code: "R2", name: "Region II (Cagayan Valley)"},
-        {code: "R3", name: "Region III (Central Luzon)"},
-        {code: "R4A", name: "Region IV-A (CALABARZON)"},
-        {code: "MIMAROPA", name: "MIMAROPA Region"},
-        {code: "R5", name: "Region V (Bicol)"},
-        {code: "R6", name: "Region VI (Western Visayas)"},
-        {code: "R7", name: "Region VII (Central Visayas)"},
-        {code: "R8", name: "Region VIII (Eastern Visayas)"},
-        {code: "R9", name: "Region IX (Zamboanga Peninsula)"},
-        {code: "R10", name: "Region X (Northern Mindanao)"},
-        {code: "R11", name: "Region XI (Davao)"},
-        {code: "R12", name: "Region XII (SOCCSKSARGEN)"},
-        {code: "R13", name: "Region XIII (Caraga)"},
-        {code: "BARMM", name: "BARMM"}
-    ];
+// 3. CASCADING ENGINE IMPLEMENTATION (Objective 4: Region -> Province -> Municipality)
+const regionSelect = document.getElementById('select-region');
+const provinceSelect = document.getElementById('select-province');
+const municipalitySelect = document.getElementById('select-municipality');
 
-    regions.forEach(r => {
+regionSelect.addEventListener('change', function() {
+    const selectedRegion = this.value;
+    provinceSelect.innerHTML = '<option value="">Select Province</option>';
+    municipalitySelect.innerHTML = '<option value="">Select Municipality</option>';
+    municipalitySelect.disabled = true;
+
+    if (!selectedRegion || !geoDataRepository[selectedRegion]) {
+        provinceSelect.disabled = true;
+        return;
+    }
+
+    const provinces = geoDataRepository[selectedRegion].provinces;
+    for (let key in provinces) {
         let opt = document.createElement('option');
-        opt.value = r.code;
-        opt.innerText = r.name;
-        regionSelect.appendChild(opt);
-    });
-}
-
-// Kapag namili ng Region ang user gamit ang phone, i-a-unlock ang mga Probinsya nito
-document.getElementById('select-region').addEventListener('change', function(e) {
-    const provSelect = document.getElementById('select-province');
-    provSelect.innerHTML = '<option value="">Select Province</option>';
-    provSelect.disabled = false;
-
-    // Salain ang mga probinsyang sakop lang ng piniling rehiyon
-    // Dito, awtomatiko nating makukuha ang mga probinsya sa mapa
-    let uniqueProvinces = [...new Set(allFeatures.map(f => f.properties.NAME_1 || f.properties.name))].sort();
-    
-    uniqueProvinces.forEach(p => {
-        let opt = document.createElement('option');
-        opt.value = p;
-        opt.innerText = p;
-        provSelect.appendChild(opt);
-    });
+        opt.value = key;
+        opt.innerText = provinces[key].name;
+        provinceSelect.appendChild(opt);
+    }
+    provinceSelect.disabled = false;
 });
 
-// 4. APPLY SUSPENSION COLOR LOGIC
-document.getElementById('btn-apply').addEventListener('click', function() {
-    const selectedProv = document.getElementById('select-province').value;
-    const selectedStatus = document.getElementById('select-status').value;
+provinceSelect.addEventListener('change', function() {
+    const selectedRegion = regionSelect.value;
+    const selectedProvince = this.value;
+    municipalitySelect.innerHTML = '<option value="">Select Municipality</option>';
 
-    if (!selectedProv) {
-        alert("Pumili muna ng Probinsya!");
+    if (!selectedProvince) {
+        municipalitySelect.disabled = true;
+        return;
+    }
+
+    const targetProvData = geoDataRepository[selectedRegion].provinces[selectedProvince];
+    
+    // Auto-Zoom and Pan Map System Action (Objective 1 & 4)
+    map.setView(targetProvData.center, targetProvData.zoom);
+
+    // Populate Municipalities
+    targetProvData.municipalities.forEach(mun => {
+        let opt = document.createElement('option');
+        opt.value = mun;
+        opt.innerText = mun;
+        municipalitySelect.appendChild(opt);
+    });
+    municipalitySelect.disabled = false;
+});
+
+// 4. APPLY ADVISORY CONTROLLER (Objective 2 & 3)
+document.getElementById('btn-apply').addEventListener('click', function() {
+    const targetMun = municipalitySelect.value;
+    const alertLevel = document.getElementById('select-status').value;
+
+    if (!targetMun) {
+        alert("Paki-pili ang Munisipyo/Lungsod na nais mong lapatan ng advisory.");
         return;
     }
 
     geoJsonLayer.eachLayer(function(layer) {
-        const pName = layer.feature.properties.NAME_1 || layer.feature.properties.name;
-        if (pName === selectedProv) {
-            layer.feature.properties.status = selectedStatus;
-            layer.setStyle({
-                fillColor: statusColors[selectedStatus],
-                fillOpacity: 0.7
-            });
+        if (layer.feature.properties.name === targetMun) {
+            layer.feature.properties.status = alertLevel;
+            geoJsonLayer.resetStyle(layer);
         }
     });
 });
 
-// 5. INFOGRAPHIC GENERATOR (PNG EXPORT FOR PHONES)
-document.getElementById('btn-png').addEventListener('click', function() {
-    // Kukunan ng screenshot ang buong app container gamit ang phone view
+// 5. SOCIAL MEDIA EXPORT TOOL ENGINE (Objective 6: Export Ready PNG)
+document.getElementById('btn-export').addEventListener('click', function() {
+    const buttonElement = this;
+    buttonElement.innerText = "Processing Map Image...";
+    
+    // Gamit ang library na isinama natin sa HTML, kukunan nito ng snapshot ang screen
     html2canvas(document.body, {
-        useCORS: true, // Para maiwasan ang error sa mga mapa galing sa internet
+        useCORS: true,
         allowTaint: true
     }).then(canvas => {
-        let link = document.createElement('a');
-        link.download = 'WeatherWatchPH_SuspensionMap.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+        let downloadHook = document.createElement('a');
+        downloadHook.download = 'WeatherWatchPH_OfficialAdvisory.png';
+        downloadHook.href = canvas.toDataURL('image/png');
+        downloadHook.click();
+        buttonElement.innerHTML = '<i class="fa-solid fa-download"></i> Export Graphic (PNG)';
     });
 });
