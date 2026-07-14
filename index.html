@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather Watch PH Mapping System</title>
+    <title>Weather Watch PH - Full Embedded Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -18,23 +18,14 @@
             <option>Rainfall Warning</option>
             <option>Flood Advisory</option>
             <option>Tropical Cyclone</option>
-            <option>Storm Surge</option>
-            <option>Heat Index</option>
-            <option>Earthquake</option>
-            <option>Volcanic Alert</option>
-        </select>
-
-        <label>Region</label>
-        <select id="region">
-            <option value="">Select Region</option>
         </select>
 
         <label>Province</label>
         <select id="province">
-            <option value="">Select Province</option>
+            <option value="">All Provinces</option>
         </select>
 
-        <label>Municipality</label>
+        <label>Municipality / City</label>
         <select id="municipality">
             <option value="">Select Municipality</option>
         </select>
@@ -50,8 +41,13 @@
         <label>Color</label>
         <input type="color" id="colorPicker" value="#ff0000">
 
-        <button id="applyBtn">Apply</button>
+        <button id="applyBtn">Apply Color</button>
+        <button id="resetBtn">Reset Colors</button>
         <button id="downloadBtn">Generate PNG</button>
+        
+        <div class="selected-box">
+            Selected: <span id="selectedDisplay">None</span>
+        </div>
     </div>
 
     <div id="map"></div>
