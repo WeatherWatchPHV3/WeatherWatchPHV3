@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Weather Watch PH Mapping System v3.0</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <title>Weather Watch PH v3.0 - National Mapping</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -12,6 +12,7 @@
 
     <div id="map"></div>
 
+    <!-- FLOATING CONTROL PANEL FOR THE WHOLE PHILIPPINES -->
     <div class="floating-panel">
         <div class="panel-header">
             <i class="fa-solid fa-cloud-showers-water logo-icon"></i>
@@ -19,65 +20,59 @@
         </div>
         
         <div class="panel-body">
+            <!-- Advisory -->
             <div class="control-group">
                 <label>Advisory</label>
                 <select id="advisory-type">
                     <option value="class-suspension">Class Suspension</option>
                     <option value="rainfall">Rainfall Warning</option>
-                    <option value="flood">Flood Advisory</option>
-                    <option value="cyclone">Tropical Cyclone</option>
                 </select>
             </div>
 
+            <!-- DYNAMIC REGIONAL SELECTORS -->
             <div class="control-group">
                 <label>Region</label>
                 <select id="select-region">
                     <option value="">Select Region</option>
-                    <option value="ncr">NCR (National Capital Region)</option>
-                    <option value="r3">Region III (Central Luzon)</option>
-                    <option value="r4a">Region IV-A (CALABARZON)</option>
+                    <!-- Kusa itong mapupuno ng JavaScript mamaya -->
                 </select>
             </div>
 
             <div class="control-group">
                 <label>Province</label>
-                <select id="select-province">
+                <select id="select-province" disabled>
                     <option value="">Select Province</option>
-                    <option value="bulacan">Bulacan</option>
-                    <option value="cavite">Cavite</option>
-                    <option value="rizal">Rizal</option>
                 </select>
             </div>
 
             <div class="control-group">
-                <label>Municipality</label>
-                <select id="select-municipality">
+                <label>Municipality / City</label>
+                <select id="select-municipality" disabled>
                     <option value="">Select Municipality</option>
                 </select>
             </div>
 
+            <!-- BYDRRM Status Style -->
             <div class="control-group">
                 <label>Status</label>
                 <select id="select-status">
-                    <option value="all-levels">🔴 All Levels</option>
-                    <option value="kinder-high">🟠 Kindergarten to High School</option>
-                    <option value="no-suspension">🟢 No Suspension</option>
+                    <option value="all-levels-both">🌸 All Levels (Public & Private)</option>
+                    <option value="all-levels-public">🔴 All Levels (Public Only)</option>
+                    <option value="shs-both">🔵 Up to Senior High (Public & Private)</option>
+                    <option value="elem-both">🟣 Up to Elementary (Public & Private)</option>
+                    <option value="custom">🟢 Custom / Others</option>
+                    <option value="no-announcement">⚫ No Announcement Yet</option>
                 </select>
             </div>
 
-            <div class="control-group">
-                <label>Color</label>
-                <div class="color-picker-wrapper">
-                    <input type="color" id="advisory-color" value="#ff3b30">
-                </div>
-            </div>
-
-            <button id="btn-apply" class="btn btn-primary">Apply</button>
+            <button id="btn-apply" class="btn btn-primary">Apply Color</button>
             <button id="btn-png" class="btn btn-secondary">Generate PNG</button>
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Isasama natin ang html2canvas para sa pag-download ng picture mamaya sa phone -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
