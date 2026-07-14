@@ -1,5 +1,5 @@
 // ==========================================
-// 1. INITIALIZE MAP (Buong Pilipinas View)
+// 1. INITIALIZE MAP (Minimalist Dark Theme)
 // ==========================================
 const map = L.map('map', {
     zoomControl: false,
@@ -7,18 +7,17 @@ const map = L.map('map', {
     maxZoom: 15
 }).setView([12.8797, 121.7740], 6);
 
-// BASE MAP
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
+// MINIMALIST DARK BASEMAP (Inalis ang mga kalsada at normal labels para lumutang ang vector data)
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+    attribution: '© CartoDB'
 }).addTo(map);
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-// Global layers & state
+// Global layers & state trackers
 let geojsonLayer = null;
 let selectedColor = "#ff0000";
 
-// Color picker listener
 document.getElementById("colorPicker").addEventListener("input", function () {
     selectedColor = this.value;
 });
@@ -50,7 +49,6 @@ const regionSelect = document.getElementById('region');
 const provinceSelect = document.getElementById('province');
 const municipalitySelect = document.getElementById('municipality');
 
-// Punuin ang Region Selector
 for (let region in phRegionsAndProvinces) {
     let opt = document.createElement('option');
     opt.value = region;
@@ -58,9 +56,6 @@ for (let region in phRegionsAndProvinces) {
     regionSelect.appendChild(opt);
 }
 
-// ==========================================
-// 3. CASCADING REGION TO PROVINCE
-// ==========================================
 regionSelect.addEventListener('change', function() {
     const selectedRegion = this.value;
     provinceSelect.innerHTML = '<option value="">Select Province</option>';
@@ -77,7 +72,7 @@ regionSelect.addEventListener('change', function() {
 });
 
 // ==========================================
-// 4. HIGH-RESOLUTION DYNAMIC MAP LOADER (Fixed Naming Bug)
+// 3. DYNAMIC LOADER WITH SMOOTH ZOOM & EVENT TRIGGERS (Gaya ng sa Video)
 // ==========================================
 provinceSelect.addEventListener('change', function() {
     const selectedProvince = this.value;
@@ -89,11 +84,8 @@ provinceSelect.addEventListener('change', function() {
         map.removeLayer(geojsonLayer);
     }
 
-    // FIXED FORMATTING: Ginawang UNDERSCORE (_) ang mga espasyo para sa katugmaang high-res link nito
-    const formattedProvName = selectedProvince.toLowerCase()
-        .replace(/\s+/g, '_');
-
-    // HIGH-RES SOURCE URL
+    // Siguraduhing tama ang pagbasa kahit may whitespace gamit ang underscore (_)
+    const formattedProvName = selectedProvince.toLowerCase().replace(/\s+/g, '_');
     const geoJsonUrl = `https://raw.githubusercontent.com/f-andres/philippines-geojson/master/geojson/municities/by-province/municities-province-${formattedProvName}.geojson`;
 
     fetch(geoJsonUrl)
@@ -104,49 +96,65 @@ provinceSelect.addEventListener('change', function() {
     .then(data => {
         geojsonLayer = L.geoJSON(data, {
             style: {
-                color: "rgba(255, 255, 255, 0.4)",
-                weight: 0.8,
-                fillColor: "#808080",
-                fillOpacity: 0.8
+                color: "#ffffff",            // Puting pinong borders base sa screenshot mo
+                weight: 1.2,                 // Tamang kapal para makita ang dibisyon
+                fillColor: "#424b5e",        // Slate navy blue base background color
+                fillOpacity: 0.9
             },
             onEachFeature: function (feature, layer) {
-                // Katugma sa bagong high-res properties structure ng file
-                const municipality =
-                    feature.properties.NAME_2 ||
-                    feature.properties.name ||
-                    "Municipality";
+                const municipality = feature.properties.NAME_2 || feature.properties.name || "Municipality";
 
-                // HOVER EFFECTS
+                // PERMANENT LABELS: Naka-embed sa gitna ng bawat polygon
+                layer.bindTooltip(municipality, {
+                    permanent: true,
+                    direction: 'center',
+                    className: 'map-label'
+                });
+
+                // HOVER ACTIONS (Glow accent effect kapag itinapat ang daliri o mouse)
                 layer.on("mouseover", function () {
                     layer.setStyle({
-                        weight: 2.5,
-                        color: "#000000"
+                        weight: 3,
+                        color: "#00e5ff"     // Cyan highlight outline
                     });
                 });
 
                 layer.on("mouseout", function () {
                     layer.setStyle({
-                        weight: 0.8,
-                        color: "rgba(255, 255, 255, 0.4)"
+                        weight: 1.2,
+                        color: "#ffffff"
                     });
                 });
 
-                // CLICK TO COLOR
+                // DYNAMIC CLICK ENGAGEMENT (Gaya ng pag-click sa video record)
                 layer.on("click", function () {
+                    // 1. Palitan ang kulay ng piniling munisipyo
                     layer.setStyle({
-                        fillColor: selectedColor
+                        fillColor: selectedColor,
+                        fillOpacity: 1
                     });
 
+                    // 2. Awtomatikong buksan ang Popup Label sa lokasyon ng click event
                     layer.bindPopup("<b>" + municipality + "</b>").openPopup();
+
+                    // 3. Update sa dropdown selection para mag-match sa kinlik na lugar
                     municipalitySelect.value = municipality;
+
+                    // 4. SMART DYNAMIC ZOOM: Lilipad at mag-fo-focus ang camera sa munisipyong pinili
+                    map.fitBounds(layer.getBounds(), {
+                        padding: [30, 30],
+                        maxZoom: 12,
+                        animate: true,        // Sinisigurong makinis ang transition ng lipad ng mapa
+                        duration: 0.6         // Bilis ng pag-zoom (segundo)
+                    });
                 });
             }
         }).addTo(map);
 
-        // Awtomatikong zoom focus sa probinsya
-        map.fitBounds(geojsonLayer.getBounds());
+        // Panimulang pag-zoom sa buong probinsya kapag binalitan ang select dropdown
+        map.fitBounds(geojsonLayer.getBounds(), { animate: true, duration: 0.8 });
 
-        // Punuin ang dropdown list ng mga bayan
+        // Populate sa municipality menu list
         const cleanMunList = data.features.map(f => f.properties.NAME_2 || f.properties.name).sort();
         cleanMunList.forEach(mun => {
             let opt = document.createElement('option');
@@ -156,13 +164,13 @@ provinceSelect.addEventListener('change', function() {
         });
     })
     .catch(error => {
-        console.error("Error loading high-res GeoJSON:", error);
+        console.error(error);
         alert("Failed to load map data for " + selectedProvince);
     });
 });
 
 // ==========================================
-// 5. SIDEBAR APPLY BUTTON ACTION
+// 4. SIDEBAR TRIGGERS (Apply Button)
 // ==========================================
 document.getElementById('applyBtn').addEventListener('click', function() {
     const selectedMun = municipalitySelect.value;
@@ -177,14 +185,18 @@ document.getElementById('applyBtn').addEventListener('click', function() {
         if (currentMunName === selectedMun) {
             layer.setStyle({
                 fillColor: selectedColor,
-                fillOpacity: 0.9
+                fillOpacity: 1
             });
+            
+            // Mag-zo-zoom din kapag pinindot ang Apply button mula sa dashboard panel
+            map.fitBounds(layer.getBounds(), { padding: [30, 30], maxZoom: 12, animate: true, duration: 0.6 });
+            layer.bindPopup("<b>" + selectedMun + "</b>").openPopup();
         }
     });
 });
 
 // ==========================================
-// 6. GENERATE PNG ADVISORY IMAGE
+// 5. GENERATE HIGH-QUALITY PNG GRAPHIC
 // ==========================================
 document.getElementById("downloadBtn").addEventListener("click", function () {
     if (typeof html2canvas === 'undefined') {
