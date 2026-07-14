@@ -2,106 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather Watch PH Mapping System</title>
-    <!-- Leaflet GIS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- FontAwesome for Dashboard Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- GIS MAP CANVAS -->
+    <div class="sidebar">
+        <h2>🌦 Weather Watch PH</h2>
+
+        <label>Advisory</label>
+        <select id="advisory">
+            <option>Class Suspension</option>
+            <option>Rainfall Warning</option>
+            <option>Flood Advisory</option>
+            <option>Tropical Cyclone</option>
+            <option>Storm Surge</option>
+            <option>Heat Index</option>
+            <option>Earthquake</option>
+            <option>Volcanic Alert</option>
+        </select>
+
+        <label>Region</label>
+        <select id="region">
+            <option value="">Select Region</option>
+        </select>
+
+        <label>Province</label>
+        <select id="province">
+            <option value="">Select Province</option>
+        </select>
+
+        <label>Municipality</label>
+        <select id="municipality">
+            <option value="">Select Municipality</option>
+        </select>
+
+        <label>Status</label>
+        <select id="status">
+            <option>🔴 All Levels</option>
+            <option>🟠 Senior High</option>
+            <option>🟡 Elementary</option>
+            <option>⚪ No Advisory</option>
+        </select>
+
+        <label>Color</label>
+        <input type="color" id="colorPicker" value="#ff0000">
+
+        <button id="applyBtn">Apply</button>
+        <button id="downloadBtn">Generate PNG</button>
+    </div>
+
     <div id="map"></div>
 
-    <!-- MAIN CONTROL MODULE (Dashboard) -->
-    <div class="floating-panel" id="dashboard-panel">
-        <div class="panel-header">
-            <div class="logo-title">
-                <i class="fa-solid fa-triangle-exclamation logo-icon"></i>
-                <div>
-                    <h2>Weather Watch PH</h2>
-                    <span class="sub-title">GIS Advisory Platform</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="panel-body">
-            <!-- 1. ADVISORY MANAGEMENT MODULE -->
-            <div class="control-group">
-                <label><i class="fa-solid fa-bullhorn"></i> Advisory Type</label>
-                <select id="advisory-type">
-                    <option value="class-suspension">🏫 Class Suspension</option>
-                    <option value="rainfall">🌧 Rainfall Warning</option>
-                    <option value="flood">🌊 Flood Advisory</option>
-                    <option value="cyclone">🌪 Tropical Cyclone</option>
-                    <option value="heat">🌡 Heat Index</option>
-                    <option value="earthquake">🌎 Earthquake</option>
-                    <option value="volcanic">🌋 Volcanic Alert</option>
-                </select>
-            </div>
-
-            <!-- 2. CASCADING LOCATION SELECTION MODULE -->
-            <div class="control-group">
-                <label><i class="fa-solid fa-map-location-dot"></i> Region</label>
-                <select id="select-region">
-                    <option value="">Select Region</option>
-                    <option value="r3">Region III (Central Luzon)</option>
-                    <option value="ncr">NCR (National Capital Region)</option>
-                    <option value="r4a">Region IV-A (CALABARZON)</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label><i class="fa-solid fa-map"></i> Province</label>
-                <select id="select-province" disabled>
-                    <option value="">Select Province</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label><i class="fa-solid fa-city"></i> Municipality / City</label>
-                <select id="select-municipality" disabled>
-                    <option value="">Select Municipality</option>
-                </select>
-            </div>
-
-            <!-- 3. GEOGRAPHIC VISUALIZATION LEVEL -->
-            <div class="control-group">
-                <label><i class="fa-solid fa-palette"></i> Alert Level / Status</label>
-                <select id="select-status">
-                    <!-- Standard Alert Styles for Public Dissemination -->
-                    <option value="level-critical">🔴 Critical / All Levels Suspended</option>
-                    <option value="level-warning">🟠 Warning / High School Suspended</option>
-                    <option value="level-alert">🟡 Alert / Elementary Suspended</option>
-                    <option value="level-custom">🔵 Custom / Specialized Info</option>
-                    <option value="level-normal">🟢 Normal / No Announcement</option>
-                </select>
-            </div>
-
-            <!-- 4. EXPORT & ACTIONS TOOLS -->
-            <div class="action-buttons">
-                <button id="btn-apply" class="btn btn-primary"><i class="fa-solid fa-check"></i> Apply Advisory</button>
-                <button id="btn-export" class="btn btn-secondary"><i class="fa-solid fa-download"></i> Export Graphic (PNG)</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- DYNAMIC LEGEND MODULE -->
-    <div class="map-legend" id="system-legend">
-        <h4><i class="fa-solid fa-list"></i> Map Legend</h4>
-        <div class="legend-item"><span class="legend-color" style="background:#ff3b30"></span> Critical / Suspended</div>
-        <div class="legend-item"><span class="legend-color" style="background:#ff9500"></span> Mid-Level Warning</div>
-        <div class="legend-item"><span class="legend-color" style="background:#ffcc00"></span> Low-Level Alert</div>
-        <div class="legend-item"><span class="legend-color" style="background:#007aff"></span> Custom Notice</div>
-        <div class="legend-item"><span class="legend-color" style="background:#4a4a4a"></span> No Active Alert</div>
-    </div>
-
-    <!-- Leaflet GIS Engine -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Html2Canvas for Mobile Social Media Export Ready Graphic -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
