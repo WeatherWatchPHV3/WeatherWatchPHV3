@@ -12,7 +12,6 @@ body, html {
     overflow: hidden;
 }
 
-/* MAP CONTAINER (Nasa likod ng screen) */
 #map {
     position: absolute;
     top: 0;
@@ -24,88 +23,100 @@ body, html {
     z-index: 1;
 }
 
-/* FLOATING SIDEBAR PANEL */
+/* FLOATING SIDEBAR PANEL (Gaya ng sa screens mo) */
 .sidebar {
     position: absolute;
     top: 15px;
     left: 15px;
-    width: 320px;
+    width: 310px;
     max-height: calc(100% - 30px);
     background: rgba(20, 24, 33, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    padding: 18px;
+    padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     color: #ffffff;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     z-index: 1000;
     overflow-y: auto;
 }
 
-.sidebar::-webkit-scrollbar {
-    width: 4px;
-}
-.sidebar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-}
-
 .sidebar h2 {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: #00e5ff;
     text-align: center;
-    margin-bottom: 5px;
-    padding-bottom: 8px;
+    padding-bottom: 6px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .sidebar label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     color: #a0aec0;
     text-transform: uppercase;
-    margin-top: 4px;
+    margin-top: 2px;
 }
 
 .sidebar select, .sidebar input[type="color"] {
     width: 100%;
-    padding: 9px 12px;
+    padding: 8px 10px;
     background: #1a202c;
     border: 1px solid #4a5568;
-    border-radius: 8px;
+    border-radius: 6px;
     color: #ffffff;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     outline: none;
 }
 
 .sidebar input[type="color"] {
-    height: 38px;
+    height: 35px;
     padding: 2px;
     cursor: pointer;
 }
 
 .sidebar button {
     width: 100%;
-    padding: 11px;
+    padding: 10px;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     font-weight: bold;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     cursor: pointer;
-    margin-top: 6px;
+    margin-top: 4px;
     transition: background 0.2s;
 }
 
-#applyBtn {
-    background: #00e5ff;
-    color: #0f172a;
+#applyBtn { background: #2563eb; color: white; }
+#applyBtn:hover { background: #1d4ed8; }
+
+#resetBtn { background: #ea580c; color: white; }
+#resetBtn:hover { background: #ca8a04; }
+
+#downloadBtn { background: #16a34a; color: white; }
+#downloadBtn:hover { background: #15803d; }
+
+.selected-box {
+    margin-top: 10px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    border-left: 3px solid #2563eb;
 }
 
-#applyBtn:hover {
-    background: #00b8d4;
+/* Base style para sa mga pangalan ng bayan sa mismong mapa */
+.map-label {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 10px;
+    text-shadow: 1px 1px 2px #000, -1px -1px 2px #000;
+    pointer-events: none;
 }
 
 #downloadBtn {
