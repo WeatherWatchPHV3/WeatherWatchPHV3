@@ -4,11 +4,10 @@
 const map = L.map('map', {
     zoomControl: false,
     minZoom: 5,
-    maxZoom: 15,
-    attributionControl: false
+    maxZoom: 15
 }).setView([12.8797, 121.7740], 6);
 
-// OpenStreetMap Standard Map (gaya ng gamit mo)
+// BASE MAP
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
 }).addTo(map);
@@ -16,7 +15,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 // Global layers & state
-let geojsonLayer;
+let geojsonLayer = null;
 let selectedColor = "#ff0000";
 
 // Color picker listener
@@ -25,7 +24,7 @@ document.getElementById("colorPicker").addEventListener("input", function () {
 });
 
 // ==========================================
-// 2. REGIONAL DATABASE FOR THE DROPDOWNS
+// 2. REGIONAL AT PROVINCIAL DICTIONARY
 // ==========================================
 const phRegionsAndProvinces = {
     "NCR": ["Metro Manila"],
@@ -51,7 +50,7 @@ const regionSelect = document.getElementById('region');
 const provinceSelect = document.getElementById('province');
 const municipalitySelect = document.getElementById('municipality');
 
-// Kusa nitong pupunuin ang Region Dropdown sa umpisa
+// Punuin ang Region Selector
 for (let region in phRegionsAndProvinces) {
     let opt = document.createElement('option');
     opt.value = region;
@@ -64,10 +63,10 @@ for (let region in phRegionsAndProvinces) {
 // ==========================================
 regionSelect.addEventListener('change', function() {
     const selectedRegion = this.value;
-    provinceSelect.innerHTML = '<option>Select Province</option>';
-    municipalitySelect.innerHTML = '<option>Select Municipality</option>';
+    provinceSelect.innerHTML = '<option value="">Select Province</option>';
+    municipalitySelect.innerHTML = '<option value="">Select Municipality</option>';
 
-    if (selectedRegion === "Select Region" || !phRegionsAndProvinces[selectedRegion]) return;
+    if (!selectedRegion || !phRegionsAndProvinces[selectedRegion]) return;
 
     phRegionsAndProvinces[selectedRegion].forEach(prov => {
         let opt = document.createElement('option');
@@ -78,23 +77,25 @@ regionSelect.addEventListener('change', function() {
 });
 
 // ==========================================
-// 4. ON-DEMAND DYNAMIC FETCHING
+// 4. HIGH-RESOLUTION DYNAMIC MAP LOADER
 // ==========================================
 provinceSelect.addEventListener('change', function() {
     const selectedProvince = this.value;
-    municipalitySelect.innerHTML = '<option>Select Municipality</option>';
+    municipalitySelect.innerHTML = '<option value="">Select Municipality</option>';
 
-    if (selectedProvince === "Select Province") return;
+    if (!selectedProvince) return;
 
     if (geojsonLayer) {
         map.removeLayer(geojsonLayer);
     }
 
+    // Pag-format ng pangalan ng file para mag-match sa bagong high-res API (e.g., "Bulacan" -> "bulacan")
     const formattedProvName = selectedProvince.toLowerCase()
         .replace(/\./g, '')
         .replace(/\s+/g, '-');
 
-    const geoJsonUrl = `https://raw.githubusercontent.com/faeldon/philippines-json-maps/master/2023/geojson/municipalities/${formattedProvName}.geojson`;
+    // HIGH-RES SOURCE URL (Para makinis at pulido ang mga gilid ng bayan)
+    const geoJsonUrl = `https://raw.githubusercontent.com/f-andres/philippines-geojson/master/geojson/municities/by-province/municities-province-${formattedProvName}.geojson`;
 
     fetch(geoJsonUrl)
     .then(response => {
@@ -103,41 +104,37 @@ provinceSelect.addEventListener('change', function() {
     })
     .then(data => {
         geojsonLayer = L.geoJSON(data, {
-            style: function () {
-                return {
-                    color: "#ffffff",
-                    weight: 1,
-                    fillColor: "#808080",
-                    fillOpacity: 0.8
-                };
+            style: {
+                color: "rgba(255, 255, 255, 0.4)", // Pinalambot na border style
+                weight: 0.8,
+                fillColor: "#808080",
+                fillOpacity: 0.8
             },
             onEachFeature: function (feature, layer) {
                 const municipality =
-                    feature.properties.ADM3_EN ||
                     feature.properties.NAME_2 ||
-                    feature.properties.NAME ||
                     feature.properties.name ||
                     "Municipality";
 
-                layer.bindTooltip(municipality, { permanent: false, className: 'map-label' });
-
-                // Hover Effects (Gaya ng orihinal mong code!)
+                // HOVER EFFECTS
                 layer.on("mouseover", function () {
                     layer.setStyle({
-                        weight: 3,
+                        weight: 2.5,
                         color: "#000000"
                     });
                 });
 
                 layer.on("mouseout", function () {
-                    geojsonLayer.resetStyle(layer);
+                    layer.setStyle({
+                        weight: 0.8,
+                        color: "rgba(255, 255, 255, 0.4)"
+                    });
                 });
 
-                // Click-to-Color Logic
+                // CLICK TO COLOR
                 layer.on("click", function () {
                     layer.setStyle({
-                        fillColor: selectedColor,
-                        fillOpacity: 0.9
+                        fillColor: selectedColor
                     });
 
                     layer.bindPopup("<b>" + municipality + "</b>").openPopup();
@@ -146,14 +143,11 @@ provinceSelect.addEventListener('change', function() {
             }
         }).addTo(map);
 
-        // Kusa nitong i-zo-zoom ang map sa boundaries ng piniling probinsya
+        // Awtomatikong zoom focus sa probinsya
         map.fitBounds(geojsonLayer.getBounds());
 
-        // Dynamic Loading ng Municipalities sa Dropdown list
-        const cleanMunList = data.features.map(f => {
-            return f.properties.ADM3_EN || f.properties.NAME_2 || f.properties.NAME || f.properties.name || "Municipality";
-        }).sort();
-
+        // Punuin ang dropdown list ng mga bayan
+        const cleanMunList = data.features.map(f => f.properties.NAME_2 || f.properties.name).sort();
         cleanMunList.forEach(mun => {
             let opt = document.createElement('option');
             opt.value = mun;
@@ -162,24 +156,24 @@ provinceSelect.addEventListener('change', function() {
         });
     })
     .catch(error => {
-        console.error(error);
-        alert("Failed to load map data for " + selectedProvince);
+        console.error("Error loading high-res GeoJSON:", error);
+        alert("Failed to load smooth map data for " + selectedProvince);
     });
 });
 
 // ==========================================
-// 5. MANUAL APPLY BUTTON CLICK
+// 5. SIDEBAR APPLY BUTTON ACTION
 // ==========================================
 document.getElementById('applyBtn').addEventListener('click', function() {
     const selectedMun = municipalitySelect.value;
     
-    if (selectedMun === "Select Municipality" || !geojsonLayer) {
+    if (!selectedMun || !geojsonLayer) {
         alert("Paki-pili muna ang Munisipyo.");
         return;
     }
 
     geojsonLayer.eachLayer(function(layer) {
-        const currentMunName = layer.feature.properties.ADM3_EN || layer.feature.properties.NAME_2 || layer.feature.properties.NAME || layer.feature.properties.name;
+        const currentMunName = layer.feature.properties.NAME_2 || layer.feature.properties.name;
         if (currentMunName === selectedMun) {
             layer.setStyle({
                 fillColor: selectedColor,
@@ -190,7 +184,7 @@ document.getElementById('applyBtn').addEventListener('click', function() {
 });
 
 // ==========================================
-// 6. GENERATE PNG FUNCTION
+// 6. GENERATE PNG ADVISORY IMAGE
 // ==========================================
 document.getElementById("downloadBtn").addEventListener("click", function () {
     if (typeof html2canvas === 'undefined') {
@@ -203,11 +197,15 @@ document.getElementById("downloadBtn").addEventListener("click", function () {
     }
 
     function captureScreen() {
+        const btn = document.getElementById("downloadBtn");
+        btn.innerText = "Generating...";
+
         html2canvas(document.body, { useCORS: true, allowTaint: true }).then(canvas => {
             let link = document.createElement('a');
             link.download = 'WeatherWatchPH_Advisory.png';
             link.href = canvas.toDataURL('image/png');
             link.click();
+            btn.innerText = "Generate PNG";
         });
     }
 });
